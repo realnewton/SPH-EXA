@@ -105,7 +105,11 @@ struct EvrardCollapseMPIFileWriter : IFileWriter<Dataset>
                                                             d.c,
                                                             d.grad_P_x,
                                                             d.grad_P_y,
-                                                            d.grad_P_z);
+                                                            d.grad_P_z,
+                                                            d.fx,
+                                                            d.fy,
+                                                            d.fz,
+                                                            d.neighborCounts);
                 }
                 catch (MPIFileNotOpenedException &ex)
                 {

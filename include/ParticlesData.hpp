@@ -30,6 +30,7 @@ struct ParticlesData
                 data[i]->reserve(reserve_size);
             }
             codes.reserve(reserve_size);
+            neighborCounts.reserve(reserve_size);
         }
 
         for (unsigned int i = 0; i < data.size(); ++i)
@@ -38,6 +39,7 @@ struct ParticlesData
         }
 
         codes.resize(size);
+        neighborCounts.resize(size);
 
 #if defined(USE_CUDA)
         devPtrs.resize(size);
@@ -62,6 +64,10 @@ struct ParticlesData
 
     std::vector<KeyType> codes; // Particle Morton codes
 
+    // diagnostic data for test code
+    std::vector<int> neighborCounts;
+    std::vector<T> fx, fy, fz;
+
     // For Sedov
     std::vector<T> mue, mui, temp, cv;
 
@@ -71,7 +77,7 @@ struct ParticlesData
     std::vector<std::vector<T>*> data{&x,   &y,          &z,   &x_m1,  &y_m1, &z_m1, &vx,       &vy,       &vz,
                                       &ro,  &u,          &p,   &h,     &m,    &c,    &grad_P_x, &grad_P_y, &grad_P_z,
                                       &du,  &du_m1,      &dt,  &dt_m1, &c11,  &c12,  &c13,      &c22,      &c23,
-                                      &c33, &maxvsignal, &mue, &mui,      &temp, &cv};
+                                      &c33, &maxvsignal, &mue, &mui,      &temp, &cv, &fx, &fy, &fz};
 
     const std::array<double, lt::size> wh = lt::createWharmonicLookupTable<double, lt::size>();
     const std::array<double, lt::size> whd = lt::createWharmonicDerivativeLookupTable<double, lt::size>();
@@ -95,7 +101,7 @@ struct ParticlesData
     // from SPH we have acceleration = -grad_P, so computePosition adds a factor of -1 to the pressure gradients
     // instead, the pressure gradients should be renamed to acceleration and computeMomentumAndEnergy should directly
     // set this to -grad_P, such that we don't need to add the gravitational acceleration with a factor of -1 on top
-    constexpr static T g = -1.0; // for Evrard Collapse Gravity.
+    constexpr static T g = 1.0; // for Evrard Collapse Gravity.
     // constexpr static T g = 6.6726e-8; // the REAL value of g. g is 1.0 for Evrard mainly
 
     constexpr static T sincIndex = 6.0;

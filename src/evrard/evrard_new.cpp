@@ -122,13 +122,13 @@ int main(int argc, char** argv)
         timer.step("mpi::synchronizeHalos");
         sph::computeMomentumAndEnergyIAD<Real>(taskList.tasks, d, domain.box());
         timer.step("MomentumEnergyIAD");
-        d.egrav = domain.addGravityAcceleration(d.x, d.y, d.z, d.h, d.m, d.g, d.grad_P_x, d.grad_P_y, d.grad_P_z);
+        d.egrav = domain.addGravityAcceleration(d.x, d.y, d.z, d.h, d.m, d.g, d.fx, d.fy, d.fz);
         // temporary sign fix, see note in ParticlesData
         d.egrav = (d.g > 0.0) ? d.egrav : -d.egrav;
         timer.step("Gravity");
         sph::computeTimestep<Real, sph::TimestepPress2ndOrder<Real, Dataset>>(taskList.tasks, d);
         timer.step("Timestep"); // AllReduce(min:dt)
-        sph::computePositions<Real, sph::computeAcceleration<Real, Dataset>>(taskList.tasks, d, domain.box());
+        sph::computePositions<Real, sph::computeAccelerationWithGravity<Real, Dataset>>(taskList.tasks, d, domain.box());
         timer.step("UpdateQuantities");
         sph::computeTotalEnergy<Real>(taskList.tasks, d);
         d.etot += d.egrav;
@@ -160,6 +160,12 @@ int main(int argc, char** argv)
 
         if ((writeFrequency > 0 && d.iteration % writeFrequency == 0) || writeFrequency == 0)
         {
+            // update neighbor counts for output
+            for (auto& t : taskList.tasks)
+            {
+                std::copy(t.neighborsCount.begin(), t.neighborsCount.end(), d.neighborCounts.begin() + t.firstParticle);
+            }
+
             fileWriter.dumpParticleDataToAsciiFile(d, domain.startIndex(), domain.endIndex(),
                                                    outDirectory + "dump_Sedov" + std::to_string(d.iteration) + ".txt");
             fileWriter.dumpParticleDataToBinFile(d, outDirectory + "dump_Sedov" + std::to_string(d.iteration) + ".bin");
