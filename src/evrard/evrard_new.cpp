@@ -122,6 +122,9 @@ int main(int argc, char** argv)
         timer.step("mpi::synchronizeHalos");
         sph::computeMomentumAndEnergyIAD<Real>(taskList.tasks, d, domain.box());
         timer.step("MomentumEnergyIAD");
+        std::fill(begin(d.fx), end(d.fx), 0);
+        std::fill(begin(d.fy), end(d.fy), 0);
+        std::fill(begin(d.fz), end(d.fz), 0);
         d.egrav = domain.addGravityAcceleration(d.x, d.y, d.z, d.h, d.m, d.g, d.fx, d.fy, d.fz);
         // temporary sign fix, see note in ParticlesData
         d.egrav = (d.g > 0.0) ? d.egrav : -d.egrav;
