@@ -322,10 +322,10 @@ public:
         timer.step("IadVelocityDivCurl");
         domain.exchangeHalos(d.c11, d.c12, d.c13, d.c22, d.c23, d.c33, d.divv, d.curlv);
         timer.step("mpi::synchronizeHalos");
-        computeAVswitches(first, last, ngmax_, d, domain.box());
-        timer.step("AVswitches");
-        domain.exchangeHalos(d.alpha);
-        timer.step("mpi::synchronizeHalos");
+        //computeAVswitches(first, last, ngmax_, d, domain.box());
+        //timer.step("AVswitches");
+        //domain.exchangeHalos(d.alpha);
+        //timer.step("mpi::synchronizeHalos");
         computeGradPVE(first, last, ngmax_, d, domain.box());
         timer.step("MomentumAndEnergy");
 
