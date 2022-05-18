@@ -314,7 +314,7 @@ public:
         timer.step("mpi::synchronizeHalos");
         computeDensityVE(first, last, ngmax_, d, domain.box());
         timer.step("Density & Gradh");
-        computeEquationOfState(first, last, d);
+        computeEquationOfState_Polytropic(first, last, d);
         timer.step("EquationOfState");
         domain.exchangeHalos(d.vx, d.vy, d.vz, d.p, d.c, d.kx, d.gradh);
         timer.step("mpi::synchronizeHalos");
@@ -322,10 +322,10 @@ public:
         timer.step("IadVelocityDivCurl");
         domain.exchangeHalos(d.c11, d.c12, d.c13, d.c22, d.c23, d.c33, d.divv, d.curlv);
         timer.step("mpi::synchronizeHalos");
-        computeAVswitches(first, last, ngmax_, d, domain.box());
-        timer.step("AVswitches");
-        domain.exchangeHalos(d.alpha);
-        timer.step("mpi::synchronizeHalos");
+        //computeAVswitches(first, last, ngmax_, d, domain.box());
+        //timer.step("AVswitches");
+        //domain.exchangeHalos(d.alpha);
+        //timer.step("mpi::synchronizeHalos");
         computeGradPVE(first, last, ngmax_, d, domain.box());
         timer.step("MomentumAndEnergy");
 
