@@ -101,7 +101,7 @@ void computeGradPVeImpl(size_t startIndex, size_t endIndex, size_t ngmax, Datase
         T dt_i = kernels::tsKCourant(maxvsignal, h[i], c[i], d.Kcour);
         minDt  = std::min(minDt, dt_i);
     }
-
+  
     d.minDt_loc = minDt;
 }
 

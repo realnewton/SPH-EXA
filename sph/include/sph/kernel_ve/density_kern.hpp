@@ -85,7 +85,7 @@ densityJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const int* neig
     T rhoi   = kxi * mi / xmassi;
     T dhdrho = -hi / (rhoi * T(3)); // This /3 is the dimension hard-coded.
 
-    T gradhi = T(1) - dhdrho * whomegai;
+    T gradhi = T(1); //- dhdrho * whomegai;
     return {kxi, gradhi};
 }
 

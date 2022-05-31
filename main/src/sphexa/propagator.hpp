@@ -138,7 +138,7 @@ class HydroProp final : public Propagator<DomainType, ParticleDataType>
 
     using T             = typename ParticleDataType::RealType;
     using KeyType       = typename ParticleDataType::KeyType;
-    using MultipoleType = ryoanji::CartesianQuadrupole<float>;
+    using MultipoleType = ryoanji::CartesianQuadrupole<double>;
 
     using Acc = typename ParticleDataType::AcceleratorType;
     using MHolder_t =
@@ -237,7 +237,7 @@ class HydroVeProp final : public Propagator<DomainType, ParticleDataType>
 
     using T             = typename ParticleDataType::RealType;
     using KeyType       = typename ParticleDataType::KeyType;
-    using MultipoleType = ryoanji::CartesianQuadrupole<float>;
+    using MultipoleType = ryoanji::CartesianQuadrupole<double>;
 
     using Acc = typename ParticleDataType::AcceleratorType;
     using MHolder_t =
@@ -314,7 +314,7 @@ public:
         timer.step("mpi::synchronizeHalos");
         computeDensityVE(first, last, ngmax_, d, domain.box());
         timer.step("Density & Gradh");
-        computeEOS(first, last, d);
+        computeEOS_Polytropic(first, last, d);
         timer.step("EquationOfState");
         domain.exchangeHalos(d.vx, d.vy, d.vz, d.p, d.c, d.kx, d.gradh);
         timer.step("mpi::synchronizeHalos");
@@ -329,6 +329,15 @@ public:
         computeGradPVE(first, last, ngmax_, d, domain.box());
         timer.step("MomentumAndEnergy");
 
+        T* x = d.x.data();
+        T* y = d.y.data();
+        T* z = d.z.data();
+        T* ax = d.ax.data();
+        T* ay = d.ay.data();
+        T* az = d.az.data();
+
+        
+
         if (d.g != 0.0)
         {
             mHolder_.upsweep(d, domain);
@@ -336,6 +345,8 @@ public:
             mHolder_.traverse(d, domain);
             timer.step("Gravity");
         }
+
+
 
         computeTimestep(first, last, d);
         timer.step("Timestep");
