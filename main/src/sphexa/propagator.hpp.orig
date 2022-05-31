@@ -314,7 +314,11 @@ public:
         timer.step("mpi::synchronizeHalos");
         computeDensityVE(first, last, ngmax_, d, domain.box());
         timer.step("Density & Gradh");
+<<<<<<< HEAD
         computeEOS_Polytropic(first, last, d);
+=======
+        computeEquationOfState_Polytropic(first, last, d);
+>>>>>>> f0e3c8505dbc08d3c40d710b6485aa59004bdb1f
         timer.step("EquationOfState");
         domain.exchangeHalos(d.vx, d.vy, d.vz, d.p, d.c, d.kx, d.gradh);
         timer.step("mpi::synchronizeHalos");
@@ -328,6 +332,15 @@ public:
         //timer.step("mpi::synchronizeHalos");
         computeGradPVE(first, last, ngmax_, d, domain.box());
         timer.step("MomentumAndEnergy");
+
+        T* x = d.x.data();
+        T* y = d.y.data();
+        T* z = d.z.data();
+        T* ax = d.ax.data();
+        T* ay = d.ay.data();
+        T* az = d.az.data();
+
+        
 
         if (d.g != 0.0)
         {
