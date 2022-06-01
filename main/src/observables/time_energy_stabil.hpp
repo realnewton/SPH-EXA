@@ -157,7 +157,7 @@ public:
         if (rank == 0)
         {
             fileutils::writeColumns(
-                constantsFile, ' ', d.iteration, d.ttot, d.minDt, d.etot, d.ecin, d.eint, d.egrav, centralDensity, radius);
+                constantsFile, ' ', d.iteration, d.ttot, d.minDt, d.etot, d.ecin, d.eint, d.egrav, d.linmom, d.angmom, centralDensity, radius);
         }
     }
 };
