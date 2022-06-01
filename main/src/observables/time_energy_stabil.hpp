@@ -61,39 +61,26 @@ template<class T> bool operator()(T const &a, T const &b) const { return a > b; 
  * with higher radius. Sort function uses greater to sort in reverse order so
  * that we can benefit from resize to cut the vectors down to 50.
  */
-template<class T> util::tuple<std::array<T, 50>, std::array<T, 50>>
+template<class T> util::tuple<std::vector<T>, std::vector<T>>
 localStabil(size_t startIndex, size_t endIndex, size_t n, const T* x, const T* y, const T* z,
-                                  const T* rho)
+                                  const T* kx, const T* m, const T* xm)
 {
-    constexpr size_t n3 = 100000;
-    constexpr size_t n2 = 50;
-    std::array<T, n3>  radius_tmp;
-    std::array<T, n3>  localDensity_tmp;
-    std::array<T, n2> radius;
-    std::array<T, n2> localDensity;
+    std::vector<T> radius(n);
+    std::vector<T> localDensity(n);
 
-    std::cout<< startIndex <<" "<<endIndex<<std::endl;
-    std::cout<<"LocalStabil: allocated"<<std::endl;
 #pragma omp parallel for
     for (size_t i = startIndex; i < endIndex; i++)
     {
-      std::cout << i <<" "<<startIndex<<'\n';
-      localDensity_tmp[i-startIndex] = rho[i];
-      radius_tmp[i-startIndex]       = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
+      localDensity[i-startIndex] = kx[i] * m[i] / xm[i];
+      radius[i-startIndex]       = std::sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
     }
 
-    std::cout<<"Sorting"<<std::endl;
-    std::sort(localDensity_tmp.begin(), localDensity_tmp.end(), greater());
-    std::sort(radius_tmp.begin(), radius_tmp.end(), greater());
-    std::cout<<"Sorting done"<<std::endl;
+    std::sort(localDensity.begin(), localDensity.end(), greater());
+    std::sort(radius.begin(), radius.end(), greater());
 
-    for (size_t i = 0; i < n2; i++)
-    {
-      localDensity[i] = localDensity_tmp[i];
-      radius[i]       = radius_tmp[i];
-    }
+    localDensity.resize(50);
+    radius.resize(50);
 
-    std::cout<<"LocalStabil: done and returning"<<std::endl;
     return{localDensity, radius};
 }
 
@@ -110,25 +97,21 @@ localStabil(size_t startIndex, size_t endIndex, size_t n, const T* x, const T* y
 template<typename T, class Dataset> util::tuple<T, T>
 computeStabil(size_t startIndex, size_t endIndex, Dataset& d, const cstone::Box<T>& box)
 {
-    std::cout<<"Entrando en localStabil"<<std::endl;
     auto [localDensity, localRadius] = localStabil(
-        startIndex, endIndex, d.x.size(), d.x.data(), d.y.data(), d.z.data(), d.rho.data());
+        startIndex, endIndex, d.x.size(), d.x.data(), d.y.data(), d.z.data(), d.kx.data(), d.m.data(), d.xm.data());
 
-    std::cout<<"Saliendo de localStabil"<<std::endl;
     int rootRank = 0;
     int mpiranks;
 
     MPI_Comm_size(d.comm, &mpiranks);
 
-    //constexpr int rootsize = 50 * mpiranks;
+    size_t rootsize = 50 * mpiranks;
 
-    std::array<T, 50> globalDensity;
-    std::array<T, 50> globalRadius;
+    std::vector<T> globalDensity(rootsize);
+    std::vector<T> globalRadius(rootsize);
 
-    std::cout<<"Haciendo GATHERs"<<std::endl;
     MPI_Gather(localDensity.data(), 50, MpiType<T>{}, globalDensity.data(), 50, MpiType<T>{}, rootRank, d.comm);
     MPI_Gather(localRadius.data(), 50, MpiType<T>{}, globalRadius.data(), 50, MpiType<T>{}, rootRank, d.comm);
-    std::cout<<"GATHERs hechos"<<std::endl;
 
     int rank;
     MPI_Comm_rank(d.comm, &rank);
@@ -136,7 +119,6 @@ computeStabil(size_t startIndex, size_t endIndex, Dataset& d, const cstone::Box<
     T centralDensity = 0.;
     T radius         = 0.;
 
-    std::cout<<"Calculando promedios"<<std::endl;
     if (rank == 0)
     {
       std::sort(globalDensity.begin(), globalDensity.end(), greater());
@@ -149,7 +131,6 @@ computeStabil(size_t startIndex, size_t endIndex, Dataset& d, const cstone::Box<
         radius         += globalRadius[i];
       }
     }
-    std::cout<<"Promedios hechos"<<std::endl;
     return {centralDensity/T(50.), radius/T(50.)};
 }
 
@@ -169,9 +150,7 @@ public:
 
     void computeAndWrite(Dataset& d, size_t firstIndex, size_t lastIndex, cstone::Box<T>& box)
     {
-        std::cout<<"Entrando en ComputeStabil"<<std::endl;
         auto [centralDensity, radius] = computeStabil(firstIndex, lastIndex, d, box);
-        std::cout<<"Saliendo de ComputeStabil"<<std::endl;
         int rank;
         MPI_Comm_rank(d.comm, &rank);
 
