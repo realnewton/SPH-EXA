@@ -4,8 +4,6 @@
 
 #include "kernels.hpp"
 
-namespace sphexa
-{
 namespace sph
 {
 
@@ -20,7 +18,7 @@ namespace sph
 template<class T1, class T2>
 CUDA_DEVICE_HOST_FUN auto idealGasEOS(T1 u, T2 rho)
 {
-    using Tc = std::common_type_t<T1, T2>;
+    using Tc           = std::common_type_t<T1, T2>;
     constexpr Tc gamma = (5.0 / 3.0);
 
     Tc tmp = u * (gamma - Tc(1));
@@ -69,8 +67,8 @@ CUDA_DEVICE_HOST_FUN auto polytropicEOS(T rho)
     constexpr T Kpol     = 2.246341237993810232e-10;
     constexpr T gammapol = 3.e0;
 
-    T p    = Kpol * std::pow(rho, gammapol);
-    T c    = std::sqrt(gammapol * p / rho);
+    T p = Kpol * std::pow(rho, gammapol);
+    T c = std::sqrt(gammapol * p / rho);
 
     return util::tuple<T, T>{p, c};
 }
@@ -89,19 +87,25 @@ CUDA_DEVICE_HOST_FUN auto polytropicEOS(T rho)
 template<typename Dataset>
 void computeEOS(size_t startIndex, size_t endIndex, Dataset& d)
 {
-    const auto* u  = d.u.data();
-    const auto* kx = d.kx.data();
-    const auto* xm = d.xm.data();
-    const auto* m  = d.m.data();
+    const auto* u     = d.u.data();
+    const auto* m     = d.m.data();
+    const auto* kx    = d.kx.data();
+    const auto* xm    = d.xm.data();
+    const auto* gradh = d.gradh.data();
 
-    auto* p = d.p.data();
-    auto* c = d.c.data();
+    auto* p    = d.p.data();
+    auto* c    = d.c.data();
+    auto* prho = d.prho.data();
+
+    bool storeRho = (d.rho.size() == d.m.size());
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
         auto rho             = kx[i] * m[i] / xm[i];
         std::tie(p[i], c[i]) = idealGasEOS(u[i], rho);
+        prho[i]              = p[i] / (kx[i] * m[i] * m[i] * gradh[i]);
+        if (storeRho) { d.rho[i] = rho; }
     }
 }
 
@@ -115,24 +119,28 @@ void computeEOS(size_t startIndex, size_t endIndex, Dataset& d)
 template<typename Dataset>
 void computeEOS_Polytropic(size_t startIndex, size_t endIndex, Dataset& d)
 {
-    const auto* kx = d.kx.data();
-    const auto* xm = d.xm.data();
-    const auto* m  = d.m.data();
+    const auto* kx    = d.kx.data();
+    const auto* xm    = d.xm.data();
+    const auto* m     = d.m.data();
+    const auto* gradh = d.gradh.data();
 
     auto* p = d.p.data();
     auto* c = d.c.data();
+    auto* prho = d.prho.data();
+
+    bool storeRho = (d.rho.size() == d.m.size());
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
         auto rho             = kx[i] * m[i] / xm[i];
         std::tie(p[i], c[i]) = polytropicEOS(rho);
+        prho[i]              = p[i] / (kx[i] * m[i] * m[i] * gradh[i]);
+        if (storeRho) { d.rho[i] = rho; }
     }
 }
 
-
-
-/*! @brief Ideal gas EOS interface w/o temperature for SPH where rho is stored
+/*! @brief Polytropic EOS interface for SPH where rho is computed on-the-fly
  *
  * @tparam Dataset
  * @param startIndex  index of first locally owned particle
@@ -144,20 +152,29 @@ void computeEOS_Polytropic(size_t startIndex, size_t endIndex, Dataset& d)
  * we could potentially avoid halo exchange of p and c in return for exchanging halos of u.
  */
 template<typename Dataset>
-void computeEOS3L(size_t startIndex, size_t endIndex, Dataset& d)
+void computeEOS_HydroStd(size_t startIndex, size_t endIndex, Dataset& d)
 {
-    const auto* rho = d.rho.data();
-    const auto* u   = d.u.data();
+    const auto* u     = d.u.data();
+    const auto* kx    = d.kx.data();
+    const auto* xm    = d.xm.data();
+    const auto* m     = d.m.data();
+    const auto* gradh = d.gradh.data();
 
-    auto* p = d.p.data();
-    auto* c = d.c.data();
+    auto* p    = d.p.data();
+    auto* c    = d.c.data();
+    auto* prho = d.prho.data();
+
+    bool storeRho = (d.rho.size() == d.m.size());
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
-        std::tie(p[i], c[i]) = idealGasEOS(u[i], rho[i]);
+        auto rho             = kx[i] * m[i] / xm[i];
+        std::tie(p[i], c[i]) = idealGasEOS(u[i], rho);
+        prho[i]              = p[i] / (kx[i] * m[i] * m[i] * gradh[i]);
+
+        if (storeRho) { d.rho[i] = rho; }
     }
 }
 
 } // namespace sph
-} // namespace sphexa
