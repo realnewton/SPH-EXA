@@ -119,18 +119,24 @@ void computeEOS(size_t startIndex, size_t endIndex, Dataset& d)
 template<typename Dataset>
 void computeEOS_Polytropic(size_t startIndex, size_t endIndex, Dataset& d)
 {
-    const auto* kx = d.kx.data();
-    const auto* xm = d.xm.data();
-    const auto* m  = d.m.data();
+    const auto* kx    = d.kx.data();
+    const auto* xm    = d.xm.data();
+    const auto* m     = d.m.data();
+    const auto* gradh = d.gradh.data();
 
     auto* p = d.p.data();
     auto* c = d.c.data();
+    auto* prho = d.prho.data();
+
+    bool storeRho = (d.rho.size() == d.m.size());
 
 #pragma omp parallel for schedule(static)
     for (size_t i = startIndex; i < endIndex; ++i)
     {
         auto rho             = kx[i] * m[i] / xm[i];
         std::tie(p[i], c[i]) = polytropicEOS(rho);
+        prho[i]              = p[i] / (kx[i] * m[i] * m[i] * gradh[i]);
+        if (storeRho) { d.rho[i] = rho; }
     }
 }
 
