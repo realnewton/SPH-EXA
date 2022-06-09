@@ -36,9 +36,9 @@
 #include "cstone/sfc/box.hpp"
 #include "iobservables.hpp"
 #include "time_energy_growth.hpp"
-#include "time_energies.hpp"
+//#include "time_energies.hpp"
 #include "gravitational_waves.hpp"
-#include "time_energy_stabil.hpp"
+#include "time_energies_stabil.hpp"
 
 namespace sphexa
 {
@@ -123,7 +123,7 @@ std::unique_ptr<IObservables<Dataset>> observablesFactory(const std::string& tes
     }
 #endif
 
-    return std::make_unique<TimeEnergyStabil<Dataset>>(constantsFile);
+    return std::make_unique<TimeAndEnergy<Dataset>>(constantsFile);
 }
 
 } // namespace sphexa

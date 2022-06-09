@@ -192,7 +192,7 @@ public:
     constexpr static T ramp  = 1.0 / (Atmax - Atmin);
 
     // AV switches floor and ceiling
-    constexpr static T alphamin       = 0.05;
+    constexpr static T alphamin       = 2.0; //0.05;
     constexpr static T alphamax       = 1.0;
     constexpr static T decay_constant = 0.2;
 
