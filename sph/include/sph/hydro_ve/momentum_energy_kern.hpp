@@ -47,8 +47,9 @@ momentumAndEnergyJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const
                        const T* x, const T* y, const T* z, const T* vx, const T* vy, const T* vz, const T* h,
                        const T* m, const T* prho, const T* c, const T* c11, const T* c12, const T* c13, const T* c22,
                        const T* c23, const T* c33, const T Atmin, const T Atmax, const T ramp, const T* wh,
-                       const T* whd, const T* kx, const T* xm, const T* alpha, T* grad_P_x, T* grad_P_y, T* grad_P_z,
-                       T* du, T* maxvsignal)
+                       const T* whd, const T* kx, const T* xm, const T* alpha, const T* dvxdx, const T* dvxdy,
+                       const T* dvxdz, const T* dvydx, const T* dvydy, const T* dvydz, const T* dvzdx, const T* dvzdy,
+                       const T* dvzdz, T* grad_P_x, T* grad_P_y, T* grad_P_z, T* du, T* maxvsignal)
 {
     T xi  = x[i];
     T yi  = y[i];
@@ -86,30 +87,68 @@ momentumAndEnergyJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const
     T c23i = c23[i];
     T c33i = c33[i];
 
+    T dvxdxi = dvxdx[i];
+    T dvxdyi = dvxdy[i];
+    T dvxdzi = dvxdz[i];
+    T dvydxi = dvydx[i];
+    T dvydyi = dvydy[i];
+    T dvydzi = dvydz[i];
+    T dvzdxi = dvzdx[i];
+    T dvzdyi = dvzdy[i];
+    T dvzdzi = dvzdz[i];
+
+    T eta_crit = std::cbrt(T(32) * M_PI / T(3) / T(neighborsCount));
+
     for (int pj = 0; pj < neighborsCount; ++pj)
     {
         int j = neighbors[pj];
 
-        T rx = xi - x[j];
-        T ry = yi - y[j];
-        T rz = zi - z[j];
+        T rx  = xi - x[j];
+        T ry  = yi - y[j];
+        T rz  = zi - z[j];
+        T vxj = vx[j];
+        T vyj = vy[j];
+        T vzj = vz[j];
+
+        T hj      = h[j];
+        T hjInv   = T(1) / hj;
+        T mj      = m[j];
+        T cj      = c[j];
+        T kxj     = kx[j];
+        T xmassj  = xm[j];
+        T rhoj    = kxj * mj / xmassj;
+        T alpha_j = alpha[j];
+        T prhoj   = prho[j];
+        T volj    = xmassj / kxj;
+
+        T vx_ij  = vxi - vxj;
+        T vy_ij  = vyi - vyj;
+        T vz_ij  = vzi - vzj;
+
+        T c11j   = c11[j];
+        T c12j   = c12[j];
+        T c13j   = c13[j];
+        T c22j   = c22[j];
+        T c23j   = c23[j];
+        T c33j   = c33[j];
+
+        T dvxdxj = dvxdx[j];
+        T dvxdyj = dvxdy[j];
+        T dvxdzj = dvxdz[j];
+        T dvydxj = dvydx[j];
+        T dvydyj = dvydy[j];
+        T dvydzj = dvydz[j];
+        T dvzdxj = dvzdx[j];
+        T dvzdyj = dvzdy[j];
+        T dvzdzj = dvzdz[j];
 
         applyPBC(box, T(2) * hi, rx, ry, rz);
 
         T r2   = rx * rx + ry * ry + rz * rz;
         T dist = std::sqrt(r2);
 
-        T vx_ij = vxi - vx[j];
-        T vy_ij = vyi - vy[j];
-        T vz_ij = vzi - vz[j];
-
-        T hj    = h[j];
-        T hjInv = T(1) / hj;
-
         T v1 = dist * hiInv;
         T v2 = dist * hjInv;
-
-        T rv = rx * vx_ij + ry * vy_ij + rz * vz_ij;
 
         T hjInv3 = hjInv * hjInv * hjInv;
         T Wi     = hiInv3 * math::pow(lt::wharmonic_lt_with_derivative(wh, whd, v1), (int)sincIndex);
@@ -119,25 +158,31 @@ momentumAndEnergyJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const
         T termA2_i = -(c12i * rx + c22i * ry + c23i * rz) * Wi;
         T termA3_i = -(c13i * rx + c23i * ry + c33i * rz) * Wi;
 
-        T c11j = c11[j];
-        T c12j = c12[j];
-        T c13j = c13[j];
-        T c22j = c22[j];
-        T c23j = c23[j];
-        T c33j = c33[j];
-
         T termA1_j = -(c11j * rx + c12j * ry + c13j * rz) * Wj;
         T termA2_j = -(c12j * rx + c22j * ry + c23j * rz) * Wj;
         T termA3_j = -(c13j * rx + c23j * ry + c33j * rz) * Wj;
 
-        T mj     = m[j];
-        T cj     = c[j];
-        T kxj    = kx[j];
-        T xmassj = xm[j];
-        T rhoj   = kxj * mj / xmassj;
+        T dmy1 = dvxdxi * rx * rx + dvydxi * rx * ry + dvzdxi * rx * rz +
+                 dvxdyi * ry * rx + dvydyi * ry * ry + dvzdyi * ry * rz +
+                 dvxdzi * rz * rx + dvydzi * rz * ry + dvzdzi * rz * rz;
+        T dmy2 = dvxdxj * rx * rx + dvydxj * rx * ry + dvzdxj * rx * rz +
+                 dvxdyj * ry * rx + dvydyj * ry * ry + dvzdyj * ry * rz +
+                 dvxdzj * rz * rx + dvydzj * rz * ry + dvzdzj * rz * rz;
+        T A_ab = T(0);
+        if (dmy2 != T(0)) { A_ab = dmy1 / dmy2;}
+        T eta_ab = std::min(dist / hi, dist / hj);
+        T dmy3 = T(1);
+        if (eta_ab < eta_crit) {dmy3 = std::exp(- math::pow((eta_ab - eta_crit) / T(0.2), 2));}
+        T phi_ab = T(0.5) * std::max(T(0), std::min(T(1), T(4) * A_ab / math::pow(T(1) + A_ab, 2))) * dmy3;
 
-        T alpha_j = alpha[j];
+        T vAVi_x = vxi - phi_ab * (dvxdxi * rx + dvxdyi * ry + dvxdzi * rz);
+        T vAVi_y = vyi - phi_ab * (dvydxi * rx + dvydyi * ry + dvydzi * rz);
+        T vAVi_z = vzi - phi_ab * (dvzdxi * rx + dvzdyi * ry + dvzdzi * rz);
+        T vAVj_x = vxj + phi_ab * (dvxdxj * rx + dvxdyj * ry + dvxdzj * rz);
+        T vAVj_y = vyj + phi_ab * (dvydxj * rx + dvydyj * ry + dvydzj * rz);
+        T vAVj_z = vzj + phi_ab * (dvzdxj * rx + dvzdyj * ry + dvzdzj * rz);
 
+        T rv           = rx * (vAVi_x - vAVj_x) + ry * (vAVi_y - vAVj_y) + rz * (vAVi_z - vAVj_z);
         T wij          = rv / dist;
         T viscosity_ij = artificial_viscosity(alpha_i, alpha_j, ci, cj, wij);
         T viscosity_jj = viscosity_ij;
@@ -146,7 +191,6 @@ momentumAndEnergyJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const
         T vijsignal = ci + cj - T(3) * wij;
         maxvsignali = (vijsignal > maxvsignali) ? vijsignal : maxvsignali;
 
-        T prhoj = prho[j];
 
         T Atwood = (std::abs(rhoi - rhoj)) / (rhoi + rhoj);
         if (Atwood < Atmin)
@@ -168,7 +212,6 @@ momentumAndEnergyJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const
             mark_ramp += sigma_ij;
         }
 
-        T volj       = xmassj / kxj;
         T a_visc     = voli * mj / mi * viscosity_ij;
         T b_visc     = volj * viscosity_jj;
         T momentum_i = prhoi * a_mom; // + 0.5 * a_visc;

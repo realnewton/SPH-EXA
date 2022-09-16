@@ -111,6 +111,9 @@ public:
     FieldVector<T>       xm;                           // Volume element definition
     FieldVector<T>       kx;                           // Volume element normalization
     FieldVector<T>       gradh;                        // grad(h) term
+    FieldVector<T>       dvxdx, dvxdy, dvxdz;          // Velocity gradient components
+    FieldVector<T>       dvydx, dvydy, dvydz;
+    FieldVector<T>       dvzdx, dvzdy, dvzdz;
     std::vector<KeyType> codes;                        // Particle space-filling-curve keys
     PinnedVec<int>       neighborsCount;               // number of neighbors of each particle
 
@@ -128,7 +131,8 @@ public:
     inline static constexpr std::array fieldNames{
         "x",   "y",   "z",   "x_m1", "y_m1", "z_m1", "vx", "vy",    "vz",    "rho",   "u",     "p",    "prho",
         "h",   "m",   "c",   "ax",   "ay",   "az",   "du", "du_m1", "c11",   "c12",   "c13",   "c22",  "c23",
-        "c33", "mue", "mui", "temp", "cv",   "xm",   "kx", "divv",  "curlv", "alpha", "gradh", "keys", "nc"};
+        "c33", "mue", "mui", "temp", "cv",   "xm",   "kx", "divv",  "curlv", "alpha", "gradh", "keys", "nc",
+        "dvxdx", "dvxdy", "dvxdz", "dvydx", "dvydy", "dvydz", "dvzdx", "dvzdy", "dvzdz"};
 
     static_assert(!cstone::HaveGpu<AcceleratorType>{} ||
                       fieldNames.size() == DeviceData_t<AccType, T, KeyType>::fieldNames.size(),
@@ -142,7 +146,8 @@ public:
     {
         auto ret =
             std::tie(x, y, z, x_m1, y_m1, z_m1, vx, vy, vz, rho, u, p, prho, h, m, c, ax, ay, az, du, du_m1, c11, c12,
-                     c13, c22, c23, c33, mue, mui, temp, cv, xm, kx, divv, curlv, alpha, gradh, codes, neighborsCount);
+                     c13, c22, c23, c33, mue, mui, temp, cv, xm, kx, divv, curlv, alpha, gradh, codes, neighborsCount,
+                     dvxdx, dvxdy, dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy, dvzdz);
 
         static_assert(std::tuple_size_v<decltype(ret)> == fieldNames.size());
         return ret;

@@ -62,6 +62,17 @@ void computeMomentumEnergyImpl(size_t startIndex, size_t endIndex, int ngmax, Da
     const T* c23 = d.c23.data();
     const T* c33 = d.c33.data();
 
+    const T* dvxdx = d.dvxdx.data();
+    const T* dvxdy = d.dvxdy.data();
+    const T* dvxdz = d.dvxdz.data();
+    const T* dvydx = d.dvydx.data();
+    const T* dvydy = d.dvydy.data();
+    const T* dvydz = d.dvydz.data();
+    const T* dvzdx = d.dvzdx.data();
+    const T* dvzdy = d.dvzdy.data();
+    const T* dvzdz = d.dvzdz.data();
+
+
     T* du       = d.du.data();
     T* grad_P_x = d.ax.data();
     T* grad_P_y = d.ay.data();
@@ -89,8 +100,8 @@ void computeMomentumEnergyImpl(size_t startIndex, size_t endIndex, int ngmax, Da
         T maxvsignal = 0;
 
         momentumAndEnergyJLoop(i, sincIndex, K, box, neighbors + ngmax * ni, nc, x, y, z, vx, vy, vz, h, m, prho, c,
-                               c11, c12, c13, c22, c23, c33, Atmin, Atmax, ramp, wh, whd, kx, xm, alpha, grad_P_x,
-                               grad_P_y, grad_P_z, du, &maxvsignal);
+                               c11, c12, c13, c22, c23, c33, Atmin, Atmax, ramp, wh, whd, kx, xm, alpha, dvxdx, dvxdy,
+                               dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy, dvzdz, grad_P_x, grad_P_y, grad_P_z, du, &maxvsignal);
 
         T dt_i = tsKCourant(maxvsignal, h[i], c[i], d.Kcour);
         minDt  = std::min(minDt, dt_i);

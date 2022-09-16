@@ -72,7 +72,8 @@ protected:
 
     //! @brief the list of dependent particle fields, these may be used as scratch space during domain sync
     using DependentFields = FieldList<"prho", "c", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23", "c33",
-                                      "xm", "kx", "divv", "curlv", "nc">;
+                                      "xm", "kx", "divv", "curlv", "nc", "dvxdx", "dvxdy", "dvxdz", "dvydx", "dvydy",
+                                      "dvydz", "dvzdx", "dvzdy", "dvzdz">;
 
 public:
     HydroVeProp(size_t ngmax, size_t ng0, std::ostream& output, size_t rank)
@@ -98,7 +99,7 @@ public:
 
         d.devData.setConserved("x", "y", "z", "h", "m", "vx", "vy", "vz", "alpha");
         d.devData.setDependent("prho", "c", "kx", "xm", "ax", "ay", "az", "du", "c11", "c12", "c13", "c22", "c23",
-                               "c33", "keys");
+                               "c33", "keys","dvxdx", "dvxdy", "dvxdz", "dvydx", "dvydy", "dvydz", "dvzdx", "dvzdy", "dvzdz");
     }
 
     void sync(DomainType& domain, ParticleDataType& d) override
@@ -161,8 +162,8 @@ public:
         transferToHost(d, first, last, {"divv", "curlv"});
         timer.step("IadVelocityDivCurl");
 
-        domain.exchangeHalosAuto(get<"c11", "c12", "c13", "c22", "c23", "c33", "divv">(d), std::get<0>(get<"az">(d)),
-                                 std::get<0>(get<"du">(d)));
+        domain.exchangeHalosAuto(get<"c11", "c12", "c13", "c22", "c23", "c33", "divv", "dvxdx", "dvxdy", "dvxdz",
+                                     "dvydx", "dvydy", "dvydz", "dvzdx", "dvzdy", "dvzdz">(d), std::get<0>(get<"az">(d)), std::get<0>(get<"du">(d)));
         timer.step("mpi::synchronizeHalos");
 
         computeAVswitches(first, last, ngmax_, d, domain.box());

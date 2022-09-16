@@ -46,7 +46,9 @@ HOST_DEVICE_FUN inline void divV_curlVJLoop(int i, T sincIndex, T K, const cston
                                             int neighborsCount, const T* x, const T* y, const T* z, const T* vx,
                                             const T* vy, const T* vz, const T* h, const T* c11, const T* c12,
                                             const T* c13, const T* c22, const T* c23, const T* c33, const T* wh,
-                                            const T* whd, const T* kx, const T* xm, T* divv, T* curlv)
+                                            const T* whd, const T* kx, const T* xm, T* divv, T* curlv, T* dvxdx,
+                                            T* dvxdy, T* dvxdz, T* dvydx, T* dvydy, T* dvydz, T* dvzdx, T* dvzdy,
+                                            T* dvzdz)
 {
     T xi  = x[i];
     T yi  = y[i];
@@ -55,11 +57,21 @@ HOST_DEVICE_FUN inline void divV_curlVJLoop(int i, T sincIndex, T K, const cston
     T vyi = vy[i];
     T vzi = vz[i];
     T hi  = h[i];
+    T kxi = kx[i];
 
     T hiInv  = 1.0 / hi;
     T hiInv3 = hiInv * hiInv * hiInv;
 
     T divvi   = 0.0;
+    T dvxdxi  = 0.0;
+    T dvxdyi  = 0.0;
+    T dvxdzi  = 0.0;
+    T dvydxi  = 0.0;
+    T dvydyi  = 0.0;
+    T dvydzi  = 0.0;
+    T dvzdxi  = 0.0;
+    T dvzdyi  = 0.0;
+    T dvzdzi  = 0.0;
     T curlv_x = 0.0;
     T curlv_y = 0.0;
     T curlv_z = 0.0;
@@ -99,13 +111,34 @@ HOST_DEVICE_FUN inline void divV_curlVJLoop(int i, T sincIndex, T K, const cston
 
         divvi += (vx_ji * termA1 + vy_ji * termA2 + vz_ji * termA3) * xmassj;
 
+        dvxdxi  += vx_ji * termA1 * xmassj;
+        dvxdyi  += vx_ji * termA2 * xmassj;
+        dvxdzi  += vx_ji * termA3 * xmassj;
+        dvydxi  += vy_ji * termA1 * xmassj;
+        dvydyi  += vy_ji * termA2 * xmassj;
+        dvydzi  += vy_ji * termA3 * xmassj;
+        dvzdxi  += vz_ji * termA1 * xmassj;
+        dvzdyi  += vz_ji * termA2 * xmassj;
+        dvzdzi  += vz_ji * termA3 * xmassj;
+
         curlv_x += (vz_ji * termA2 - vy_ji * termA3) * xmassj;
         curlv_y += (vx_ji * termA3 - vz_ji * termA1) * xmassj;
         curlv_z += (vy_ji * termA1 - vx_ji * termA2) * xmassj;
     }
 
-    divv[i]  = K * hiInv3 * divvi / kx[i];
-    curlv[i] = K * hiInv3 * std::abs(std::sqrt(curlv_x * curlv_x + curlv_y * curlv_y + curlv_z * curlv_z)) / kx[i];
+    divv[i]  = K * hiInv3 * divvi / kxi;
+    curlv[i] = K * hiInv3 * std::abs(std::sqrt(curlv_x * curlv_x + curlv_y * curlv_y + curlv_z * curlv_z)) / kxi;
+
+    dvxdx[i] = dvxdxi / kxi;
+    dvxdy[i] = dvxdyi / kxi;
+    dvxdz[i] = dvxdzi / kxi;
+    dvydx[i] = dvydxi / kxi;
+    dvydy[i] = dvydyi / kxi;
+    dvydz[i] = dvydzi / kxi;
+    dvzdx[i] = dvzdxi / kxi;
+    dvzdy[i] = dvzdyi / kxi;
+    dvzdz[i] = dvzdzi / kxi;
+
 }
 
 } // namespace sph

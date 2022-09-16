@@ -47,7 +47,8 @@ __global__ void iadDivvCurlvGpu(T sincIndex, T K, int ngmax, const cstone::Box<T
                                 size_t numParticles, const KeyType* particleKeys, const T* x, const T* y, const T* z,
                                 const T* vx, const T* vy, const T* vz, const T* h, const T* m, const T* wh,
                                 const T* whd, const T* xm, const T* kx, T* c11, T* c12, T* c13, T* c22, T* c23, T* c33,
-                                T* divv, T* curlv)
+                                T* divv, T* curlv, T* dvxdx, T* dvxdy, T* dvxdz, T* dvydx, T* dvydy, T* dvydz, T* dvzdx,
+                                T* dvzdy, T* dvzdz)
 {
     unsigned tid = blockDim.x * blockIdx.x + threadIdx.x;
     unsigned i   = tid + first;
@@ -66,10 +67,9 @@ __global__ void iadDivvCurlvGpu(T sincIndex, T K, int ngmax, const cstone::Box<T
                           numParticles, ngmax);
     neighborsCount = stl::min(neighborsCount, ngmax);
 
-    IADJLoop(i, sincIndex, K, box, neighbors, neighborsCount, x, y, z, h, wh, whd, xm, kx, c11, c12, c13, c22, c23,
-             c33);
+    IADJLoop(i, sincIndex, K, box, neighbors, neighborsCount, x, y, z, h, wh, whd, xm, kx, c11, c12, c13, c22, c23, c33);
     divV_curlVJLoop(i, sincIndex, K, box, neighbors, neighborsCount, x, y, z, vx, vy, vz, h, c11, c12, c13, c22, c23,
-                    c33, wh, whd, kx, xm, divv, curlv);
+                    c33, wh, whd, kx, xm, divv, curlv, dvxdx, dvxdy, dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy, dvzdz);
 }
 
 template<class Dataset>
@@ -91,7 +91,9 @@ void computeIadDivvCurlv(size_t startIndex, size_t endIndex, int ngmax, Dataset&
         rawPtr(d.devData.h), rawPtr(d.devData.m), rawPtr(d.devData.wh), rawPtr(d.devData.whd), rawPtr(d.devData.xm),
         rawPtr(d.devData.kx), rawPtr(d.devData.c11), rawPtr(d.devData.c12), rawPtr(d.devData.c13),
         rawPtr(d.devData.c22), rawPtr(d.devData.c23), rawPtr(d.devData.c33), rawPtr(d.devData.divv),
-        rawPtr(d.devData.curlv));
+        rawPtr(d.devData.curlv), rawPtr(d.devData.dvxdx), rawPtr(d.devData.dvxdy), rawPtr(d.devData.dvxdz),
+        rawPtr(d.devData.dvydx), rawPtr(d.devData.dvydy), rawPtr(d.devData.dvydz), rawPtr(d.devData.dvzdx),
+        rawPtr(d.devData.dvzdy), rawPtr(d.devData.dvzdz));
     checkGpuErrors(cudaGetLastError());
 }
 

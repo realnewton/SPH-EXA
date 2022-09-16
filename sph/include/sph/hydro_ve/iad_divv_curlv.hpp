@@ -59,6 +59,16 @@ void computeIadDivvCurlvImpl(size_t startIndex, size_t endIndex, int ngmax, Data
     T* c23 = d.c23.data();
     T* c33 = d.c33.data();
 
+    T* dvxdx = d.dvxdx.data();
+    T* dvxdy = d.dvxdy.data();
+    T* dvxdz = d.dvxdz.data();
+    T* dvydx = d.dvydx.data();
+    T* dvydy = d.dvydy.data();
+    T* dvydz = d.dvydz.data();
+    T* dvzdx = d.dvzdx.data();
+    T* dvzdy = d.dvzdy.data();
+    T* dvzdz = d.dvzdz.data();
+
     T* divv  = d.divv.data();
     T* curlv = d.curlv.data();
 
@@ -80,7 +90,8 @@ void computeIadDivvCurlvImpl(size_t startIndex, size_t endIndex, int ngmax, Data
                  c33);
 
         divV_curlVJLoop(i, sincIndex, K, box, neighbors + ngmax * ni, nc, x, y, z, vx, vy, vz, h, c11, c12, c13, c22,
-                        c23, c33, wh, whd, kx, xm, divv, curlv);
+                        c23, c33, wh, whd, kx, xm, divv, curlv, dvxdx, dvxdy, dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy,
+                        dvzdz);
     }
 }
 
