@@ -150,9 +150,9 @@ public:
         computeEOS(first, last, d);
         timer.step("EquationOfState");
 
-        domain.exchangeHalosAuto(get<"vx", "vy", "vz", "prho", "c", "kx">(d), std::get<0>(get<"gradh">(d)),
+	      domain.exchangeHalosAuto(get<"vx", "vy", "vz", "prho", "c", "kx">(d), std::get<0>(get<"gradh">(d)),
                                  std::get<0>(get<"ay">(d)));
-        timer.step("mpi::synchronizeHalos");
+	      timer.step("mpi::synchronizeHalos");
 
         d.release("gradh");
         d.acquire("ax");
