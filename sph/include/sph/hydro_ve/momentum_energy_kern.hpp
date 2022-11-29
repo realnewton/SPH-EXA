@@ -182,7 +182,10 @@ momentumAndEnergyJLoop(int i, T sincIndex, T K, const cstone::Box<T>& box, const
         T vAVj_y = vyj + phi_ab * (dvydxj * rx + dvydyj * ry + dvydzj * rz);
         T vAVj_z = vzj + phi_ab * (dvzdxj * rx + dvzdyj * ry + dvzdzj * rz);
 
-        T rv           = rx * (vAVi_x - vAVj_x) + ry * (vAVi_y - vAVj_y) + rz * (vAVi_z - vAVj_z);
+        T rv     = rx * (vAVi_x - vAVj_x) + ry * (vAVi_y - vAVj_y) + rz * (vAVi_z - vAVj_z);
+
+        //rv = rx * vx_ij + ry * vy_ij + rz * vz_ij;
+
         T wij          = rv / dist;
         T viscosity_ij = artificial_viscosity(alpha_i, alpha_j, ci, cj, wij);
         T viscosity_jj = viscosity_ij;

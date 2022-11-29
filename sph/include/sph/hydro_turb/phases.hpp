@@ -65,8 +65,8 @@ void computePhases(size_t numModes, size_t numDim, const std::vector<T>& OUPhase
             T curla = OUPhases[6 * i + 2 * j] - divb;
             T curlb = OUPhases[6 * i + 2 * j + 1] - diva;
 
-            phasesReal[3 * i + j] = solWeight * curla + (1.0 - solWeight) * divb;
-            phasesImag[3 * i + j] = solWeight * curlb + (1.0 - solWeight) * diva;
+            phasesReal[3 * i + j] = 0.5 * curla + (1.0 - solWeight) * divb;
+            phasesImag[3 * i + j] = 0.5 * curlb + (1.0 - solWeight) * diva;
         }
     }
 }
