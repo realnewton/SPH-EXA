@@ -31,13 +31,13 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <numeric>
 #include <tuple>
 #include <vector>
 
 #include "cstone/tree/definitions.h"
-#include "cstone/util/util.hpp"
 
 namespace cstone
 {
@@ -152,16 +152,6 @@ public:
         return count;
     }
 
-    std::size_t sendCount(int myRank) const
-    {
-        size_t count = 0;
-        for (std::size_t i = 0; i < data_.size(); ++i)
-        {
-            if (int(i) != myRank) { count += (*this)[i].totalCount(); }
-        }
-        return count;
-    }
-
     auto begin() { return data_.begin(); }
     auto end() { return data_.end(); }
 
@@ -183,5 +173,54 @@ inline size_t maxNumRanges(const SendList& sendList)
     }
     return ret;
 }
+
+class SendRanges : public std::vector<LocalIndex>
+{
+    using Base = std::vector<LocalIndex>;
+
+    size_t size() const { return Base::size(); };
+
+public:
+    SendRanges() = default;
+    explicit SendRanges(int s)
+        : Base(s)
+    {
+    }
+
+    int numRanks() const { return int(Base::size()) - 1; }
+
+    LocalIndex count(int rank) const
+    {
+        if ((*this)[rank + 1] >= (*this)[rank]) { return (*this)[rank + 1] - (*this)[rank]; }
+        else { return 0; }
+    }
+};
+
+//! @brief used to record or replicate a given exchange pattern or order
+class ExchangeLog
+{
+public:
+    ExchangeLog() = default;
+
+    [[nodiscard]] bool empty() const { return log_.empty(); }
+
+    void clear() { log_.clear(); }
+
+    /*! @brief add a P2P message to the log
+     * @param rank        destination or source rank
+     * @param location    start of message in local arrays
+     */
+    void addExchange(int rank, LocalIndex location) { log_.emplace_back(rank, location); }
+
+    [[nodiscard]] LocalIndex lookup(int rank) const
+    {
+        auto it = std::find_if(log_.begin(), log_.end(), [rank](auto e) { return std::get<0>(e) == rank; });
+        assert(it != log_.end());
+        return std::get<1>(*it);
+    }
+
+private:
+    std::vector<std::tuple<int, LocalIndex>> log_;
+};
 
 } // namespace cstone
