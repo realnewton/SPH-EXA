@@ -62,7 +62,7 @@ void initSedovFields(Dataset& d, const std::map<std::string, double>& constants)
     std::fill(d.h.begin(), d.h.end(), hInit);
     std::fill(d.du_m1.begin(), d.du_m1.end(), 0.0);
     std::fill(d.mui.begin(), d.mui.end(), d.muiConst);
-    std::fill(d.alpha.begin(), d.alpha.end(), d.alphamin);
+    std::fill(d.alpha.begin(), d.alpha.end(), d.alphamax);
 
     std::fill(d.vx.begin(), d.vx.end(), 0.0);
     std::fill(d.vy.begin(), d.vy.end(), 0.0);
@@ -86,7 +86,7 @@ void initSedovFields(Dataset& d, const std::map<std::string, double>& constants)
         T zi = d.z[i];
         T r2 = xi * xi + yi * yi + zi * zi;
 
-        T ui      = constants.at("ener0") * exp(-(r2 / width2)) + constants.at("u0");
+        T ui      = constants.at("u0"); //constants.at("ener0") * exp(-(r2 / width2)) + constants.at("u0");
         d.temp[i] = ui / cv;
     }
 }
