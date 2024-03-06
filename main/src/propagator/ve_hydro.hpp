@@ -52,6 +52,7 @@ class HydroVeProp : public Propagator<DomainType, DataType>
 {
 protected:
     using Base = Propagator<DomainType, DataType>;
+    using Base::pmReader;
     using Base::timer;
 
     using T             = typename DataType::RealType;
@@ -130,6 +131,7 @@ public:
     void computeForces(DomainType& domain, DataType& simData)
     {
         timer.start();
+        pmReader.start();
         sync(domain, simData);
         timer.step("domain::sync");
 
@@ -145,6 +147,7 @@ public:
 
         findNeighborsSfc(first, last, d, domain.box());
         timer.step("FindNeighbors");
+        pmReader.step();
 
         computeXMass(first, last, d, domain.box());
         timer.step("XMass");
@@ -191,13 +194,16 @@ public:
         d.devData.acquire("ay", "az");
         computeMomentumEnergy<avClean>(first, last, d, domain.box());
         timer.step("MomentumAndEnergy");
+        pmReader.step();
 
         if (d.g != 0.0)
         {
             mHolder_.upsweep(d, domain);
             timer.step("Upsweep");
+            pmReader.step();
             mHolder_.traverse(d, domain);
             timer.step("Gravity");
+            pmReader.step();
         }
     }
 
@@ -212,11 +218,8 @@ public:
         computeTimestep(first, last, d);
         timer.step("Timestep");
         computePositions(first, last, d, domain.box());
-        timer.step("UpdateQuantities");
         updateSmoothingLength(first, last, d);
-        timer.step("UpdateSmoothingLength");
-
-        timer.stop();
+        timer.step("UpdateQuantities");
     }
 
     void saveFields(IFileWriter* writer, size_t first, size_t last, DataType& simData,

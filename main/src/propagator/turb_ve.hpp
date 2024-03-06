@@ -61,9 +61,9 @@ class TurbVeProp final : public HydroVeProp<avClean, DomainType, DataType>
     sph::TurbulenceData<RealType, typename DataType::AcceleratorType> turbulenceData;
 
 public:
-    TurbVeProp(std::ostream& output, size_t rank)
+    TurbVeProp(std::ostream& output, size_t rank, const InitSettings& settings)
         : Base(output, rank)
-        , turbulenceData(TurbulenceConstants(), rank == 0)
+        , turbulenceData(settings, rank == 0)
     {
     }
 
@@ -81,11 +81,8 @@ public:
         timer.step("Turbulence Stirring");
 
         computePositions(first, last, d, domain.box());
-        timer.step("UpdateQuantities");
         updateSmoothingLength(first, last, d);
-        timer.step("UpdateSmoothingLength");
-
-        timer.stop();
+        timer.step("UpdateQuantities");
     }
 
     void save(IFileWriter* writer) override { turbulenceData.loadOrStore(writer); }
